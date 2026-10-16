@@ -149,6 +149,29 @@ tr:last-child td { border-bottom: 0; }
 .form-status.success { color: #c9f4da; background: rgba(43,124,82,.25); border: 1px solid rgba(91,198,136,.38); }
 .form-status.error { color: #ffc1c7; background: rgba(181,31,46,.18); border: 1px solid rgba(228,122,132,.35); }
 
+.slot-stage { max-width: 650px; margin: auto; text-align: center; }
+.slot-machine { position: relative; padding: clamp(22px, 5vw, 42px); border: 2px solid var(--gold); border-radius: 28px; background: radial-gradient(circle at 50% 0%, rgba(181,31,46,.28), transparent 45%), linear-gradient(145deg, #211a12, #090806); box-shadow: 0 28px 90px rgba(0,0,0,.6), inset 0 0 0 7px #0d0b08, inset 0 0 0 8px rgba(217,173,85,.35); overflow: hidden; }
+.slot-machine::before { content: '♦  JACKPOT DO JAPA  ♦'; display: block; margin-bottom: 22px; color: var(--gold-light); font: 700 clamp(.9rem, 4vw, 1.25rem) Cinzel, serif; letter-spacing: .12em; }
+.slot-machine.win { animation: jackpot-glow .7s ease-in-out 3 alternate; }
+.reels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 10px; border: 2px solid #6f5229; border-radius: 18px; background: #050403; box-shadow: inset 0 8px 22px rgba(0,0,0,.8); }
+.reel { display: grid; place-items: center; aspect-ratio: .82; min-width: 0; border-radius: 11px; background: linear-gradient(#eee3cc, #fffdf6 42%, #e8dcc4); color: #111; font-size: clamp(2.5rem, 13vw, 5rem); box-shadow: inset 0 9px 18px rgba(79,54,20,.17), inset 0 -9px 18px rgba(79,54,20,.17); overflow: hidden; }
+.reel.spinning { animation: reel-shake .12s linear infinite; filter: blur(1px); }
+.slot-button { width: min(100%, 300px); margin-top: 24px; min-height: 58px; font-size: 1rem; }
+.slot-result { display: grid; gap: 7px; margin-top: 20px; padding: 18px; border-radius: 14px; }
+.slot-result strong { font: 700 1.15rem Cinzel, serif; }
+.slot-result span { font-size: .88rem; }
+.slot-result code { width: fit-content; margin: 5px auto 0; padding: 6px 12px; border: 1px dashed currentColor; border-radius: 8px; font-size: 1rem; font-weight: 800; letter-spacing: .12em; }
+.slot-result.winner { color: #fff1b9; background: rgba(217,173,85,.18); border: 1px solid var(--gold); }
+.slot-result.try-again { color: #d7cbb8; background: rgba(255,255,255,.04); border: 1px solid var(--line); }
+.slot-rules { max-width: 650px; margin: 20px auto 0; color: var(--muted); font-size: .82rem; text-align: center; }
+
+@keyframes reel-shake { 50% { transform: translateY(3px); } }
+@keyframes jackpot-glow { to { box-shadow: 0 0 90px rgba(217,173,85,.75), inset 0 0 0 7px #0d0b08, inset 0 0 0 8px var(--gold); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .reel.spinning, .slot-machine.win { animation: none; }
+}
+
 .qr-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 .qr-card { text-align: center; border: 1px solid var(--line); background: #fff; color: #17120d; border-radius: 16px; padding: 18px; }
 .qr-card h3 { color: #17120d; margin: 10px 0 4px; }

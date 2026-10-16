@@ -1,6 +1,7 @@
 const pages = [
   ['index.html', 'Início'],
   ['checkin.html', 'Check-in'],
+  ['slot.html', 'Caça-níquel'],
   ['jogos.html', 'Jogos'],
   ['fichas.html', 'Fichas'],
   ['cardapio.html', 'Cardápio'],
@@ -105,6 +106,7 @@ function initQRCodes() {
   const root = new URL('.', window.location.href);
   const targets = [
     ['Check-in', 'checkin.html'],
+    ['Caça-níquel', 'slot.html'],
     ['Regras gerais', 'jogos.html'],
     ['Blackjack', 'blackjack.html'],
     ['Dados', 'dados.html'],
@@ -118,6 +120,100 @@ function initQRCodes() {
     const src = `https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=12&data=${encodeURIComponent(url)}`;
     return `<article class="qr-card"><img src="${src}" alt="QR Code para ${label}"><h3>${label}</h3><p>${url}</p></article>`;
   }).join('');
+}
+
+function initSlotMachine() {
+  const machine = document.querySelector('[data-slot-machine]');
+  if (!machine) return;
+
+  const reels = [...machine.querySelectorAll('[data-reel]')];
+  const button = machine.querySelector('[data-spin]');
+  const result = machine.querySelector('[data-slot-result]');
+  const symbols = ['🍒', '🍋', '🔔', '⭐', '7️⃣', '💎'];
+  const key = 'cassino-do-japa-slot-v1';
+  const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+
+  const randomSymbol = () => symbols[Math.floor(Math.random() * symbols.length)];
+  const makeCode = () => {
+    const bytes = new Uint8Array(3);
+    crypto.getRandomValues(bytes);
+    return `JAPA-${[...bytes].map(value => (value % 36).toString(36).toUpperCase()).join('')}`;
+  };
+
+  const playTone = (frequency, duration = .1) => {
+    try {
+      const context = new AudioContext();
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(.05, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.001, context.currentTime + duration);
+      oscillator.connect(gain).connect(context.destination);
+      oscillator.start();
+      oscillator.stop(context.currentTime + duration);
+    } catch (_) { /* O jogo continua normalmente sem áudio. */ }
+  };
+
+  const showResult = state => {
+    reels.forEach((reel, index) => { reel.textContent = state.symbols[index]; });
+    machine.classList.toggle('win', state.win);
+    result.hidden = false;
+    result.className = `slot-result ${state.win ? 'winner' : 'try-again'}`;
+    result.innerHTML = state.win
+      ? `<strong>JACKPOT! +$100 EM FICHAS</strong><span>Mostre esta tela ao banqueiro.</span><code>${state.claimCode}</code>`
+      : '<strong>Não foi dessa vez!</strong><span>Seu giro foi utilizado. Continue a sorte nas mesas.</span>';
+    button.disabled = true;
+    button.textContent = 'Giro utilizado';
+  };
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(key) || 'null');
+    if (saved?.symbols?.length === 3) showResult(saved);
+  } catch (_) { /* Se o armazenamento falhar, o jogo continua. */ }
+
+  button.addEventListener('click', async () => {
+    if (button.disabled) return;
+    button.disabled = true;
+    button.textContent = 'Girando…';
+    result.hidden = true;
+    machine.classList.remove('win');
+    reels.forEach(reel => reel.classList.add('spinning'));
+
+    const win = Math.random() < .2;
+    let finalSymbols;
+    if (win) {
+      const winningSymbol = randomSymbol();
+      finalSymbols = [winningSymbol, winningSymbol, winningSymbol];
+    } else {
+      do finalSymbols = [randomSymbol(), randomSymbol(), randomSymbol()];
+      while (finalSymbols.every(symbol => symbol === finalSymbols[0]));
+    }
+
+    const intervals = reels.map((reel, index) => setInterval(() => {
+      reel.textContent = randomSymbol();
+    }, 65 + index * 12));
+
+    for (let index = 0; index < reels.length; index += 1) {
+      await wait(850 + index * 280);
+      clearInterval(intervals[index]);
+      reels[index].textContent = finalSymbols[index];
+      reels[index].classList.remove('spinning');
+      playTone(260 + index * 120);
+    }
+
+    const state = {
+      symbols: finalSymbols,
+      win,
+      claimCode: win ? makeCode() : null,
+      playedAt: new Date().toISOString()
+    };
+    try { localStorage.setItem(key, JSON.stringify(state)); } catch (_) { /* Sem persistência. */ }
+    if (win) {
+      playTone(880, .5);
+      if (navigator.vibrate) navigator.vibrate([120, 80, 120]);
+    }
+    showResult(state);
+  });
 }
 
 function initCheckin() {
@@ -162,3 +258,4 @@ function initCheckin() {
 initRanking();
 initQRCodes();
 initCheckin();
+initSlotMachine();

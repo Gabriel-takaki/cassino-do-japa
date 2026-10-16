@@ -1,6 +1,6 @@
 # Cassino do Japa
 
-Portal estático e responsivo para uma noite temática de cassino. Inclui check-in simbólico, regras de jogos, dinâmica das fichas, cardápio, ranking local e QR Codes para impressão.
+Portal estático e responsivo para uma noite temática de cassino. Inclui check-in simbólico, caça-níquel com prêmio em fichas, regras de jogos, dinâmica das fichas, cardápio, ranking local e QR Codes para impressão.
 
 ## Rodar localmente
 
