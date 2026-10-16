@@ -120,16 +120,13 @@ function initQRCodes() {
   }).join('');
 }
 
-async function initCheckin() {
+function initCheckin() {
   const form = document.querySelector('[data-checkin-form]');
   if (!form) return;
 
   const status = document.querySelector('[data-checkin-status]');
-  const count = document.querySelector('[data-checkin-count]');
   const button = form.querySelector('button[type="submit"]');
-  const config = window.CASSINO_CONFIG || {};
-  const baseUrl = String(config.supabaseUrl || '').replace(/\/$/, '');
-  const key = String(config.supabaseAnonKey || '');
+  const key = 'cassino-do-japa-checkins-v1';
 
   const show = (message, type = '') => {
     status.textContent = message;
@@ -137,24 +134,7 @@ async function initCheckin() {
     status.hidden = false;
   };
 
-  if (!baseUrl || !key) {
-    show('O check-in está sendo configurado. Tente novamente em alguns minutos.', 'error');
-    button.disabled = true;
-    return;
-  }
-
-  const headers = { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' };
-
-  try {
-    const response = await fetch(`${baseUrl}/rest/v1/rpc/checkin_count`, {
-      method: 'POST', headers, body: '{}'
-    });
-    if (response.ok) count.textContent = await response.json();
-  } catch (_) {
-    count.textContent = '—';
-  }
-
-  form.addEventListener('submit', async event => {
+  form.addEventListener('submit', event => {
     event.preventDefault();
     const name = String(new FormData(form).get('name') || '').trim();
     if (name.length < 2) {
@@ -162,35 +142,20 @@ async function initCheckin() {
       return;
     }
 
-    button.disabled = true;
-    button.textContent = 'Confirmando…';
-    status.hidden = true;
+    const normalized = name.toLocaleLowerCase('pt-BR');
+    const saved = JSON.parse(localStorage.getItem(key) || '[]');
+    const existing = saved.find(entry => entry.normalized === normalized);
+    const checkedInAt = existing?.checkedInAt || new Date().toISOString();
 
-    try {
-      const response = await fetch(`${baseUrl}/rest/v1/checkins`, {
-        method: 'POST',
-        headers: { ...headers, Prefer: 'return=representation' },
-        body: JSON.stringify({ name })
-      });
-
-      if (response.status === 409) {
-        show('Esse nome já fez check-in. Pode entrar e aproveitar a noite! 🎰', 'success');
-        form.reset();
-        return;
-      }
-      if (!response.ok) throw new Error('checkin_failed');
-
-      const rows = await response.json();
-      const time = new Date(rows[0].checked_in_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-      show(`Check-in confirmado às ${time}. Seu saldo inicial é $2.340. Boa sorte! 🎉`, 'success');
-      form.reset();
-      if (count.textContent !== '—') count.textContent = String(Number(count.textContent || 0) + 1);
-    } catch (_) {
-      show('Não foi possível confirmar agora. Verifique a conexão e tente novamente.', 'error');
-    } finally {
-      button.disabled = false;
-      button.textContent = 'Confirmar check-in';
+    if (!existing) {
+      saved.push({ name, normalized, checkedInAt });
+      localStorage.setItem(key, JSON.stringify(saved));
     }
+
+    const time = new Date(checkedInAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const prefix = existing ? `${name}, seu check-in já estava confirmado` : `${name}, check-in confirmado`;
+    show(`${prefix} às ${time}. Seu saldo inicial é $2.340. Boa sorte! 🎉`, 'success');
+    form.reset();
   });
 }
 
